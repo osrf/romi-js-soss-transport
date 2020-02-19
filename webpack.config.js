@@ -3,7 +3,7 @@ module.exports = {
   mode: 'development',
   output: {
     path: `${__dirname}/dist`,
-    filename: 'romi-js-soss.js',
+    filename: 'romi-js-soss-transport.js',
     library: 'romi',
     libraryTarget: 'umd',
   },

@@ -17,15 +17,10 @@ module.exports = function(config) {
     files: [
       '**/*.js',
       {
-        pattern: '../dist/romi-js-soss.js',
+        pattern: '../dist/romi-js-soss-transport.js',
         type: 'js',
         included: 'true',
       },
-      // {
-      //   pattern: './support/jsrsasign-jwths-min-8.0.12.js',
-      //   type: 'js',
-      //   included: 'true',
-      // },
     ],
 
 
