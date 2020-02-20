@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack",
     "build:prod": "webpack --mode production",
-    "prepublish": "npm run build:prod",
+    "prepare": "npm run build:prod",
     "watch": "webpack --watch",
     "clean": "rm -rf dist",
     "test": "ts-node node_modules/.bin/jasmine",
