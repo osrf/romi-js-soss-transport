@@ -7,7 +7,7 @@ import {
   SubscriptionCb,
   Transport,
   Type,
-} from '@romi/core';
+} from '@osrf/romi-js-core-interfaces';
 import { filter, take } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 
