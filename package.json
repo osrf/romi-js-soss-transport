@@ -2,7 +2,6 @@
   "name": "@osrf/romi-js-soss-transport",
   "version": "0.0.1",
   "description": "soss transport for romi",
-  "private": true,
   "scripts": {
     "build": "webpack",
     "build:prod": "webpack --mode production",
