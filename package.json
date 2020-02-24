@@ -1,6 +1,6 @@
 {
   "name": "@osrf/romi-js-soss-transport",
-  "version": "0.0.1",
+  "version": "0.0.2-alpha.0",
   "description": "soss transport for romi",
   "scripts": {
     "build": "webpack",
@@ -18,7 +18,7 @@
   "author": "Teo Koon Peng <koonpeng@openrobotics.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@osrf/romi-js-core-interfaces": "git+https://github.com/osrf/romi-js-core-interfaces.git#semver:^0.0.1",
+    "@osrf/romi-js-core-interfaces": "0.0.1",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
