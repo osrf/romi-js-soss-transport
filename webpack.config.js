@@ -2,7 +2,7 @@ module.exports = {
   entry: './lib/index.ts',
   mode: 'development',
   output: {
-    path: `${__dirname}/dist`,
+    path: `${__dirname}/bundle`,
     filename: 'romi-js-soss-transport.js',
     library: 'romi',
     libraryTarget: 'umd',

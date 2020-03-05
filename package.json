@@ -1,13 +1,13 @@
 {
   "name": "@osrf/romi-js-soss-transport",
-  "version": "0.0.2-alpha.0",
+  "version": "0.0.2-alpha.1",
   "description": "soss transport for romi",
   "scripts": {
     "build": "webpack",
     "build:prod": "webpack --mode production",
     "prepare": "npm run build:prod",
     "watch": "webpack --watch",
-    "clean": "rm -rf dist",
+    "clean": "tsc --build --clean && rm -rf bundle",
     "test": "ts-node node_modules/.bin/jasmine",
     "lint": "eslint . --ext .ts,.js"
   },
@@ -18,7 +18,7 @@
   "author": "Teo Koon Peng <koonpeng@openrobotics.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@osrf/romi-js-core-interfaces": "0.0.1",
+    "@osrf/romi-js-core-interfaces": "0.0.2-alpha.1",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
@@ -40,8 +40,10 @@
   },
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",
+  "browser": "dist/romi-js-soss-transport.js",
   "files": [
-    "dist",
-    "!dist/spec"
+    "/lib/**/*.js",
+    "/lib/**/*.d.ts",
+    "/bundle/"
   ]
 }

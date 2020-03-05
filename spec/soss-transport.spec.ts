@@ -4,15 +4,7 @@ import * as path from 'path';
 import * as rclnodejs from 'rclnodejs';
 
 function runKarmaTest(testCase: string): Promise<number> {
-  const cp = ChildProcess.spawn(
-    'karma',
-    [
-      'run',
-      '--',
-      '--grep',
-      testCase
-    ],
-  );
+  const cp = ChildProcess.spawn('karma', ['run', '--', '--grep', testCase]);
   return new Promise(res => {
     cp.once('exit', res);
   });
@@ -37,13 +29,9 @@ describe('soss transport test', () => {
     await new Promise(res => karmaServer.once('browsers_ready', res));
 
     // start soss
-    sossProc = ChildProcess.spawn(
-      'soss',
-      [`${__dirname}/support/soss.yaml`],
-      {
-        stdio: ['pipe', 'pipe', 'inherit'],
-      },
-    );
+    sossProc = ChildProcess.spawn('soss', [`${__dirname}/support/soss.yaml`], {
+      stdio: ['pipe', 'pipe', 'inherit'],
+    });
     sossProc.on('error', e => console.error(e.message));
     waitSossExit = new Promise(res => {
       sossProc.once('exit', res);
@@ -87,8 +75,8 @@ describe('soss transport test', () => {
 
   it('can call service', async done => {
     const p = runKarmaTest('can call service');
-    node.createService('std_srvs/srv/Empty', 'test_service', {}, async (_, resp) => {
-      resp.send({});
+    node.createService('std_srvs/srv/SetBool', 'test_service', {}, async (_, resp) => {
+      resp.send({ success: true, message: 'success' });
       const clientResult = await p;
       expect(clientResult).toBe(0);
       done();

@@ -13,8 +13,8 @@ describe('soss transport test', () => {
     token = KJUR.jws.JWS.sign('HS256', header, payload, 'rmf');
   });
 
-  beforeEach(() => {
-    transport = new romi.SossTransport('romi-js-test', 'wss://localhost:50001', token);
+  beforeEach(async () => {
+    transport = await romi.SossTransport.connect('romi-js-test', 'wss://localhost:50001', token);
   });
 
   afterEach(async () => {
@@ -23,27 +23,38 @@ describe('soss transport test', () => {
 
   it('can publish', () => {
     const publisher = transport.createPublisher({
+      validate: msg => msg,
       type: 'std_msgs/msg/String',
       topic: 'test_publish',
     });
-    publisher.publish({data: 'test'});
+    publisher.publish({ data: 'test' });
   });
 
   it('can subscribe', done => {
-    transport.subscribe({
-      type: 'std_msgs/msg/String',
-      topic: 'test_subscribe',
-    }, msg => {
-      expect(msg.data).toBe('test');
-      done();
-    });
+    transport.subscribe(
+      {
+        validate: msg => msg,
+        type: 'std_msgs/msg/String',
+        topic: 'test_subscribe',
+      },
+      msg => {
+        expect(msg.data).toBe('test');
+        done();
+      },
+    );
   });
 
   it('can call service', async () => {
-    const resp = await transport.call({
-      type: 'std_srvs/srv/Empty',
-      service: 'test_service',
-    }, {});
-    expect(resp.result).toBeTruthy();
+    const resp = await transport.call(
+      {
+        validateResponse: msg => msg,
+        type: 'std_srvs/srv/SetBool',
+        service: 'test_service',
+      },
+      { data: true },
+    );
+    // bug in soss? returns 1 for true and 0 for false
+    expect(resp.success).toBeTruthy(true);
+    expect(resp.message).toBe('success');
   });
 });

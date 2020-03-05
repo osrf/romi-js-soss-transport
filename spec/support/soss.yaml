@@ -21,4 +21,4 @@ topics:
   test_subscribe: { type: "std_msgs/String", route: ros2_to_client }
 
 services:
-  test_service: { type: "std_srvs/Empty", route: ros2_service }
+  test_service: { type: "std_srvs/SetBool", route: ros2_service }

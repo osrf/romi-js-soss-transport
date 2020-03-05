@@ -17,7 +17,7 @@ module.exports = function(config) {
     files: [
       '**/*.js',
       {
-        pattern: '../dist/romi-js-soss-transport.js',
+        pattern: '../bundle/romi-js-soss-transport.js',
         type: 'js',
         included: 'true',
       },
