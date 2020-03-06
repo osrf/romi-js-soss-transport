@@ -1,5 +1,4 @@
 import {
-  EventEmitter,
   Options,
   Publisher,
   RomiService,
@@ -13,7 +12,7 @@ import { Subject } from 'rxjs/internal/Subject';
 import { filter, take } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 
-export class SossTransport extends EventEmitter<TransportEvents> implements Transport {
+export class SossTransport extends TransportEvents implements Transport {
   static async connect(name: string, url: string, token: string): Promise<SossTransport> {
     const p = new Promise<WebSocketSubject<RosBridgeMsg>>((res, rej) => {
       const wsSubject: WebSocketSubject<RosBridgeMsg> = new WebSocketSubject<RosBridgeMsg>({
@@ -131,6 +130,10 @@ export class SossTransport extends EventEmitter<TransportEvents> implements Tran
     super();
     this._name = name;
     this._wsSubject = webSocketSubject;
+    this._wsSubject.subscribe({
+      complete: () => this.emit('close'),
+      error: (e) => this.emit('error', e),
+    });
   }
 
   private _trimTopic(topic: string): string {
