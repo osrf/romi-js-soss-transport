@@ -84,7 +84,9 @@ export class SossTransport extends TransportEvents implements Transport {
       this._pubSubjects.set(topic.topic, pubSubject);
     }
 
-    return pubSubject.subscribe(msg => cb(topic.validate(msg.msg)));
+    return pubSubject
+      .pipe(filter(msg => msg.topic === topic.topic))
+      .subscribe(msg => cb(topic.validate(msg.msg)));
   }
 
   async call<Request extends object, Response extends object>(
@@ -105,9 +107,7 @@ export class SossTransport extends TransportEvents implements Transport {
           filter(msg => msg.op === 'service_response' && (msg as ServiceResponseMsg).id === callId),
           take(1),
         )
-        .subscribe(msg => {
-          res(service.validateResponse((msg as ServiceResponseMsg).values));
-        });
+        .subscribe(msg => res(service.validateResponse((msg as ServiceResponseMsg).values)));
     });
   }
 
@@ -132,7 +132,7 @@ export class SossTransport extends TransportEvents implements Transport {
     this._wsSubject = webSocketSubject;
     this._wsSubject.subscribe({
       complete: () => this.emit('close'),
-      error: (e) => this.emit('error', e),
+      error: e => this.emit('error', e),
     });
   }
 

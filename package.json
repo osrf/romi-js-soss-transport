@@ -18,7 +18,7 @@
   "author": "Teo Koon Peng <koonpeng@openrobotics.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@osrf/romi-js-core-interfaces": "0.0.2-alpha.1",
+    "@osrf/romi-js-core-interfaces": "file:../romi-js-core-interfaces",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
@@ -38,9 +38,9 @@
     "webpack": "^4.41.0",
     "webpack-cli": "^3.3.9"
   },
-  "main": "dist/lib/index.js",
-  "types": "dist/lib/index.d.ts",
-  "browser": "dist/romi-js-soss-transport.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "browser": "bundle/romi-js-soss-transport.js",
   "files": [
     "/lib/**/*.js",
     "/lib/**/*.d.ts",
