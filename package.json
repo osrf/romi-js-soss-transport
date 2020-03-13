@@ -18,7 +18,7 @@
   "author": "Teo Koon Peng <koonpeng@openrobotics.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@osrf/romi-js-core-interfaces": "file:../romi-js-core-interfaces",
+    "@osrf/romi-js-core-interfaces": "git+https://github.com/osrf/romi-js-core-interfaces.git#develop",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
