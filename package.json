@@ -3,8 +3,8 @@
   "version": "0.0.2-alpha.1",
   "description": "soss transport for romi",
   "scripts": {
-    "build": "webpack",
-    "build:prod": "webpack --mode production",
+    "build": "webpack && tsc",
+    "build:prod": "webpack --mode production && tsc",
     "prepare": "npm run build:prod",
     "watch": "webpack --watch",
     "clean": "tsc --build --clean && rm -rf bundle",
@@ -39,6 +39,7 @@
     "webpack-cli": "^3.3.9"
   },
   "main": "lib/index.js",
+  "module": "lib/index.js",
   "types": "lib/index.d.ts",
   "browser": "bundle/romi-js-soss-transport.js",
   "files": [
