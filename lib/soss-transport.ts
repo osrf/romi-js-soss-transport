@@ -25,7 +25,7 @@ export class SossTransport extends TransportEvents implements Transport {
           next: rej,
         },
       });
-      // need this so that rxjs fires the close event, we need to close event in order to get the
+      // need this so that rxjs fires the close event, we need the close event in order to get the
       // error code.
       const sub = wsSubject.subscribe({
         error: () => {
@@ -39,6 +39,10 @@ export class SossTransport extends TransportEvents implements Transport {
 
   get name(): string {
     return this._name;
+  }
+
+  get webSocketSubject(): WebSocketSubject<RosBridgeMsg> {
+    return this._wsSubject;
   }
 
   createPublisher<Message>(topic: RomiTopic<Message>, options?: Options): Publisher<Message> {
@@ -147,31 +151,31 @@ export class SossTransport extends TransportEvents implements Transport {
   }
 }
 
-interface RosBridgeMsg {
+export interface RosBridgeMsg {
   op: string;
 }
 
-interface PubMsg extends RosBridgeMsg {
+export interface PubMsg extends RosBridgeMsg {
   op: 'publish';
   topic: string;
   type: string;
   msg: unknown;
 }
 
-interface SubMsg extends RosBridgeMsg {
+export interface SubMsg extends RosBridgeMsg {
   op: 'subscribe';
   topic: string;
   type: string;
 }
 
-interface ServiceCallMsg extends RosBridgeMsg {
+export interface ServiceCallMsg extends RosBridgeMsg {
   op: 'call_service';
   id: string;
   service: string;
   args: unknown;
 }
 
-interface ServiceResponseMsg extends RosBridgeMsg {
+export interface ServiceResponseMsg extends RosBridgeMsg {
   op: 'service_response';
   id: string;
   service: string;

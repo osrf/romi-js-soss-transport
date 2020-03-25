@@ -31,7 +31,8 @@
         "plugin:@typescript-eslint/recommended"
       ],
       "rules": {
-        "@typescript-eslint/camelcase": "off" // rclnodejs generated objects may not be camelCase.
+        "@typescript-eslint/camelcase": "off",
+        "@typescript-eslint/explicit-function-return-type": "off"
       }
     },
     {

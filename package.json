@@ -8,7 +8,7 @@
     "prepare": "npm run build:prod",
     "watch": "webpack --watch",
     "clean": "tsc --build --clean && rm -rf bundle",
-    "test": "ts-node node_modules/.bin/jasmine",
+    "test": "ts-node -O '{\"module\": \"commonjs\"}' node_modules/.bin/jasmine",
     "lint": "eslint . --ext .ts,.js"
   },
   "repository": {
