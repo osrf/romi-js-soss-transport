@@ -8,7 +8,7 @@ import {
   Transport,
   TransportEvents,
 } from '@osrf/romi-js-core-interfaces';
-import { Subject } from 'rxjs/internal/Subject';
+import { Subject } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 
