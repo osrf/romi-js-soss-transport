@@ -3,14 +3,22 @@ import {
   Publisher,
   RomiService,
   RomiTopic,
+  Service,
   Subscription,
   SubscriptionCb,
   Transport,
   TransportEvents,
 } from '@osrf/romi-js-core-interfaces';
-import { Subject } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
+
+enum OpCode {
+  publish = 'publish',
+  subscribe = 'subscribe',
+  unsubscribe = 'unsubscribe',
+  serviceCall = 'call_service',
+  serviceResponse = 'service_response',
+}
 
 export class SossTransport extends TransportEvents implements Transport {
   static async connect(name: string, url: string, token: string): Promise<SossTransport> {
@@ -37,6 +45,21 @@ export class SossTransport extends TransportEvents implements Transport {
     return new SossTransport(name, wsSubject);
   }
 
+  static toSossTopic(topic: RomiTopic<unknown>): string {
+    const idx = topic.topic.search(/\w/);
+    return topic.topic.slice(idx);
+  }
+
+  static toSossService(service: RomiService<unknown, unknown>): string {
+    const idx = service.service.search(/\w/);
+    return service.service.slice(idx);
+  }
+
+  static toSossType(topic: RomiTopic<unknown> | RomiService<unknown, unknown>): string {
+    const parts = topic.type.split('/');
+    return `${parts[0]}/${parts[parts.length - 1]}`;
+  }
+
   get name(): string {
     return this._name;
   }
@@ -51,9 +74,9 @@ export class SossTransport extends TransportEvents implements Transport {
     return {
       publish: (msg: unknown): void => {
         const pubMsg: PubMsg = {
-          op: 'publish',
-          topic: this._trimTopic(topic.topic),
-          type: this._toRosType(topic.type),
+          op: OpCode.publish,
+          topic: SossTransport.toSossTopic(topic),
+          type: SossTransport.toSossType(topic),
           msg: msg,
         };
         this._wsSubject.next(pubMsg);
@@ -70,38 +93,46 @@ export class SossTransport extends TransportEvents implements Transport {
       throw new Error('options are not supported yet');
     }
 
-    let pubSubject = this._pubSubjects.get(topic.topic);
-    if (!pubSubject) {
+    if (!this._subCount[topic.topic]) {
       const subMsg: SubMsg = {
-        op: 'subscribe',
-        topic: this._trimTopic(topic.topic),
-        type: this._toRosType(topic.type),
+        op: OpCode.subscribe,
+        topic: SossTransport.toSossTopic(topic),
+        type: SossTransport.toSossType(topic),
       };
       this._wsSubject.next(subMsg);
-
-      pubSubject = new Subject<PubMsg>();
-      this._wsSubject.subscribe(msg => {
-        if (msg.op === 'publish') {
-          pubSubject?.next(msg as PubMsg);
-        }
-      });
-      this._pubSubjects.set(topic.topic, pubSubject);
+      if (!(topic.topic in this._subCount)) {
+        this._subCount[topic.topic] = 0;
+      }
+      this._subCount[topic.topic]++;
     }
 
-    return pubSubject
-      .pipe(filter(msg => msg.topic === topic.topic))
-      .subscribe(msg => cb(topic.validate(msg.msg)));
+    const rxSub = this._wsSubject
+      .pipe(filter(msg => msg.op === OpCode.publish && (msg as PubMsg).topic === topic.topic))
+      .subscribe(msg => cb(topic.validate((msg as PubMsg).msg)));
+    return {
+      unsubscribe: () => {
+        this._subCount[topic.topic]--;
+        if (!this._subCount) {
+          const unsubMsg: UnsubMsg = {
+            op: OpCode.unsubscribe,
+            topic: topic.topic,
+          };
+          this._wsSubject.next(unsubMsg);
+        }
+        rxSub.unsubscribe();
+      },
+    };
   }
 
-  async call<Request extends object, Response extends object>(
+  async call<Request extends unknown, Response extends unknown>(
     service: RomiService<Request, Response>,
     req: Request,
   ): Promise<Response> {
     const callId = (this._serviceCallCount++).toString();
     const serviceCallMsg: ServiceCallMsg = {
-      op: 'call_service',
+      op: OpCode.serviceCall,
       id: callId,
-      service: this._trimTopic(service.service),
+      service: SossTransport.toSossService(service),
       args: req,
     };
     this._wsSubject.next(serviceCallMsg);
@@ -115,10 +146,43 @@ export class SossTransport extends TransportEvents implements Transport {
     });
   }
 
+  createService<Request extends unknown, Response extends unknown>(
+    service: RomiService<Request, Response>,
+  ): Service<Request, Response> {
+    let subscription: ReturnType<SossTransport['_wsSubject']['subscribe']>;
+    return {
+      start: (handler: (req: Request) => Promise<Response> | Response): void => {
+        subscription = this._wsSubject
+          .pipe(
+            filter(
+              msg =>
+                msg.op === OpCode.serviceCall &&
+                (msg as ServiceCallMsg).service === service.service,
+            ),
+          )
+          .subscribe({
+            next: async msg => {
+              const result = await handler(service.validateRequest(msg));
+              const respMsg: ServiceResponseMsg = {
+                op: OpCode.serviceResponse,
+                id: (msg as ServiceCallMsg).id,
+                service: (msg as ServiceCallMsg).service,
+                values: result,
+              };
+              this._wsSubject.next(respMsg);
+            },
+          });
+      },
+      stop: () => subscription.unsubscribe(),
+    };
+  }
+
   async destroy(): Promise<void> {
     const p = new Promise<void>(res => {
       this._wsSubject.subscribe({
-        complete: res,
+        complete: () => {
+          res();
+        },
       });
     });
     this._wsSubject.complete();
@@ -127,7 +191,7 @@ export class SossTransport extends TransportEvents implements Transport {
 
   private _name: string;
   private _wsSubject: WebSocketSubject<RosBridgeMsg>;
-  private _pubSubjects = new Map<string, Subject<PubMsg>>();
+  private _subCount: Record<string, number> = {};
   private _serviceCallCount = 0;
 
   private constructor(name: string, webSocketSubject: WebSocketSubject<RosBridgeMsg>) {
@@ -139,16 +203,6 @@ export class SossTransport extends TransportEvents implements Transport {
       error: e => this.emit('error', e),
     });
   }
-
-  private _trimTopic(topic: string): string {
-    const idx = topic.search(/\w/);
-    return topic.slice(idx);
-  }
-
-  private _toRosType(typeClass: string): string {
-    const parts = typeClass.split('/');
-    return `${parts[0]}/${parts[parts.length - 1]}`;
-  }
 }
 
 export interface RosBridgeMsg {
@@ -156,27 +210,32 @@ export interface RosBridgeMsg {
 }
 
 export interface PubMsg extends RosBridgeMsg {
-  op: 'publish';
+  op: OpCode.publish;
   topic: string;
   type: string;
   msg: unknown;
 }
 
 export interface SubMsg extends RosBridgeMsg {
-  op: 'subscribe';
+  op: OpCode.subscribe;
   topic: string;
   type: string;
 }
 
+export interface UnsubMsg extends RosBridgeMsg {
+  op: OpCode.unsubscribe;
+  topic: string;
+}
+
 export interface ServiceCallMsg extends RosBridgeMsg {
-  op: 'call_service';
+  op: OpCode.serviceCall;
   id: string;
   service: string;
   args: unknown;
 }
 
 export interface ServiceResponseMsg extends RosBridgeMsg {
-  op: 'service_response';
+  op: OpCode.serviceResponse;
   id: string;
   service: string;
   values: unknown;

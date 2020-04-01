@@ -18,7 +18,7 @@
   "author": "Teo Koon Peng <koonpeng@openrobotics.org>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@osrf/romi-js-core-interfaces": "0.0.2-alpha.3",
+    "@osrf/romi-js-core-interfaces": "file:../romi-js-core-interfaces",
     "rxjs": "^6.5.4"
   },
   "devDependencies": {
@@ -27,6 +27,7 @@
     "@types/selenium-webdriver": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^2.16.0",
     "@typescript-eslint/parser": "^2.16.0",
+    "chromedriver": "^80.0.1",
     "eslint": "^6.8.0",
     "jasmine": "^3.4.0",
     "jsonwebtoken": "^8.5.1",
