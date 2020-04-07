@@ -1,0 +1,27 @@
+systems:
+
+  # websocket server for the dashboard
+  client:
+    type: websocket_server
+    port: 50001
+    cert: .rmf/certs/websocket_server.crt
+    key: .rmf/certs/websocket_server.key
+    authentication: { policies: [ { secret: rmf, algo: HS256 } ] }
+    serialization: bson
+
+  # ROS2 node
+  ros2: { type: ros2 }
+
+routes:
+  client_to_ros2: { from: client, to: ros2 }
+  ros2_to_client: { from: ros2, to: client }
+  ros2_service: { server: ros2, clients: client }
+  client_service: { server: client, clients: ros2 }
+
+topics:
+  test_publish: { type: "std_msgs/String", route: client_to_ros2 }
+  test_subscribe: { type: "std_msgs/String", route: ros2_to_client }
+
+services:
+  test_service: { type: "std_srvs/SetBool", route: ros2_service }
+  test_service_host: { type: "std_srvs/SetBool", route: client_service }

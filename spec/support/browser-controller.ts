@@ -16,17 +16,22 @@ function _evalService<T extends RomiService<unknown, unknown>>(service: T): T {
   return service;
 }
 
-async function _connect(token: string): Promise<romi.SossTransport> {
-  return romi.SossTransport.connect('romi-js-test', 'wss://localhost:50001', token);
+async function _connect(token: string, encoding: romi.Encoding): Promise<romi.SossTransport> {
+  return romi.SossTransport.connect('romi-js-test', 'wss://localhost:50001', token, encoding);
 }
 
 export class BrowserController {
-  constructor(public driver: WebDriver, public token: string) {}
+  constructor(public driver: WebDriver, public token: string, public encoding: romi.Encoding) {}
 
   async publish(driver: WebDriver, topic: RomiTopic<StdmsgString>): Promise<void> {
     return driver.executeAsyncScript(
-      async (token: string, topic: RomiTopic<StdmsgString>, done: () => void) => {
-        const transport = await _connect(token);
+      async (
+        token: string,
+        encoding: romi.Encoding,
+        topic: RomiTopic<StdmsgString>,
+        done: () => void,
+      ) => {
+        const transport = await _connect(token, encoding);
         topic = _evalTopic(topic);
         const publisher = transport.createPublisher(topic);
         publisher.publish({ data: 'test' });
@@ -34,14 +39,20 @@ export class BrowserController {
         done();
       },
       this.token,
+      this.encoding,
       topic,
     );
   }
 
   async subscribe(topic: RomiTopic<StdmsgString>): Promise<any> {
     return this.driver.executeAsyncScript(
-      async (token: string, topic: RomiTopic<StdmsgString>, done: (msg: any) => void) => {
-        const transport = await _connect(token);
+      async (
+        token: string,
+        encoding: romi.Encoding,
+        topic: RomiTopic<StdmsgString>,
+        done: (msg: any) => void,
+      ) => {
+        const transport = await _connect(token, encoding);
         topic = _evalTopic(topic);
         transport.subscribe(topic, (msg: any) => {
           transport.destroy();
@@ -49,6 +60,7 @@ export class BrowserController {
         });
       },
       this.token,
+      this.encoding,
       topic,
     );
   }
@@ -60,15 +72,17 @@ export class BrowserController {
     return driver.executeAsyncScript(
       async (
         token: string,
+        encoding: romi.Encoding,
         service: RomiService<SetBoolRequest, SetBoolResponse>,
         done: (msg: unknown) => void,
       ) => {
-        const transport = await _connect(token);
+        const transport = await _connect(token, encoding);
         service = _evalService(service);
         const resp = await transport.call(service, { data: true });
         done(resp);
       },
       this.token,
+      this.encoding,
       service,
     );
   }
@@ -80,10 +94,11 @@ export class BrowserController {
     return driver.executeAsyncScript(
       async (
         token: string,
+        encoding: romi.Encoding,
         service: RomiService<SetBoolRequest, SetBoolResponse>,
         done: () => void,
       ) => {
-        const transport = await _connect(token);
+        const transport = await _connect(token, encoding);
         service = _evalService(service);
         const srv = transport.createService(service);
         srv.start(() => {
@@ -96,6 +111,7 @@ export class BrowserController {
         done();
       },
       this.token,
+      this.encoding,
       service,
     );
   }
@@ -109,7 +125,7 @@ export class BrowserController {
     ...scripts: ((...args: any[]) => any)[]
   ): Promise<void> {
     return driver.executeScript((scripts: string[]) => {
-      scripts.forEach(x => window.eval(x));
+      scripts.forEach((x) => window.eval(x));
     }, scripts);
   }
 }

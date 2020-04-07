@@ -9,6 +9,8 @@ import {
   Transport,
   TransportEvents,
 } from '@osrf/romi-js-core-interfaces';
+import * as Bson from 'bson';
+import { Subject } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { WebSocketSubject } from 'rxjs/webSocket';
 
@@ -20,12 +22,33 @@ enum OpCode {
   serviceResponse = 'service_response',
 }
 
+export enum Encoding {
+  Json,
+  Bson,
+}
+
 export class SossTransport extends TransportEvents implements Transport {
-  static async connect(name: string, url: string, token: string): Promise<SossTransport> {
-    const p = new Promise<WebSocketSubject<RosBridgeMsg>>((res, rej) => {
-      const wsSubject: WebSocketSubject<RosBridgeMsg> = new WebSocketSubject<RosBridgeMsg>({
+  static async connect(
+    name: string,
+    url: string,
+    token: string,
+    encoding: Encoding = Encoding.Json,
+  ): Promise<SossTransport> {
+    const serializer = (() => {
+      switch (encoding) {
+        case Encoding.Json:
+          return JSON.stringify;
+        case Encoding.Bson:
+          return Bson.serialize;
+      }
+    })();
+
+    const p = new Promise<WebSocketSubject<unknown>>((res, rej) => {
+      const wsSubject: WebSocketSubject<unknown> = new WebSocketSubject<unknown>({
         url: url,
         protocol: token,
+        serializer: serializer,
+        deserializer: ({ data }) => data, // skip deserialize
         openObserver: {
           next: () => res(wsSubject),
         },
@@ -42,7 +65,7 @@ export class SossTransport extends TransportEvents implements Transport {
       });
     });
     const wsSubject = await p;
-    return new SossTransport(name, wsSubject);
+    return new SossTransport(name, wsSubject, encoding);
   }
 
   static toSossTopic(topic: RomiTopic<unknown>): string {
@@ -64,8 +87,12 @@ export class SossTransport extends TransportEvents implements Transport {
     return this._name;
   }
 
-  get webSocketSubject(): WebSocketSubject<RosBridgeMsg> {
+  get webSocketSubject(): WebSocketSubject<unknown> {
     return this._wsSubject;
+  }
+
+  get messageSubject(): Subject<RosBridgeMsg> {
+    return this._msgSubject;
   }
 
   createPublisher<Message>(topic: RomiTopic<Message>, options?: Options): Publisher<Message> {
@@ -106,9 +133,9 @@ export class SossTransport extends TransportEvents implements Transport {
       this._subCount[topic.topic]++;
     }
 
-    const rxSub = this._wsSubject
-      .pipe(filter(msg => msg.op === OpCode.publish && (msg as PubMsg).topic === topic.topic))
-      .subscribe(msg => cb(topic.validate((msg as PubMsg).msg)));
+    const rxSub = this._msgSubject
+      .pipe(filter((msg) => msg.op === OpCode.publish && (msg as PubMsg).topic === topic.topic))
+      .subscribe((msg) => cb(topic.validate((msg as PubMsg).msg)));
     return {
       unsubscribe: () => {
         this._subCount[topic.topic]--;
@@ -136,13 +163,15 @@ export class SossTransport extends TransportEvents implements Transport {
       args: req,
     };
     this._wsSubject.next(serviceCallMsg);
-    return new Promise<Response>(res => {
-      this._wsSubject
+    return new Promise<Response>((res) => {
+      this._msgSubject
         .pipe(
-          filter(msg => msg.op === 'service_response' && (msg as ServiceResponseMsg).id === callId),
+          filter(
+            (msg) => msg.op === 'service_response' && (msg as ServiceResponseMsg).id === callId,
+          ),
           take(1),
         )
-        .subscribe(msg => res(service.validateResponse((msg as ServiceResponseMsg).values)));
+        .subscribe((msg) => res(service.validateResponse((msg as ServiceResponseMsg).values)));
     });
   }
 
@@ -152,16 +181,16 @@ export class SossTransport extends TransportEvents implements Transport {
     let subscription: ReturnType<SossTransport['_wsSubject']['subscribe']>;
     return {
       start: (handler: (req: Request) => Promise<Response> | Response): void => {
-        subscription = this._wsSubject
+        subscription = this._msgSubject
           .pipe(
             filter(
-              msg =>
+              (msg) =>
                 msg.op === OpCode.serviceCall &&
                 (msg as ServiceCallMsg).service === service.service,
             ),
           )
           .subscribe({
-            next: async msg => {
+            next: async (msg) => {
               const result = await handler(service.validateRequest(msg));
               const respMsg: ServiceResponseMsg = {
                 op: OpCode.serviceResponse,
@@ -178,29 +207,52 @@ export class SossTransport extends TransportEvents implements Transport {
   }
 
   async destroy(): Promise<void> {
-    const p = new Promise<void>(res => {
-      this._wsSubject.subscribe({
+    const p = new Promise<void>((res) => {
+      this._msgSubject.subscribe({
         complete: () => {
           res();
         },
       });
     });
-    this._wsSubject.complete();
+    this._msgSubject.complete();
     return p;
   }
 
   private _name: string;
-  private _wsSubject: WebSocketSubject<RosBridgeMsg>;
+  private _wsSubject: WebSocketSubject<unknown>;
+  private _msgSubject = new Subject<RosBridgeMsg>();
   private _subCount: Record<string, number> = {};
   private _serviceCallCount = 0;
 
-  private constructor(name: string, webSocketSubject: WebSocketSubject<RosBridgeMsg>) {
+  private constructor(
+    name: string,
+    webSocketSubject: WebSocketSubject<unknown>,
+    encoding: Encoding,
+  ) {
     super();
     this._name = name;
     this._wsSubject = webSocketSubject;
+
+    const deserialize = (() => {
+      switch (encoding) {
+        case Encoding.Json:
+          return JSON.parse;
+        case Encoding.Bson:
+          return async (data: Blob) => {
+            const resp = new Response(data);
+            const arrayBuf = await resp.arrayBuffer();
+            return Bson.deserialize(Buffer.from(arrayBuf));
+          };
+      }
+    })();
+
     this._wsSubject.subscribe({
+      next: (msg) => (async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this._msgSubject.next(await deserialize(msg as any));
+      })(),
       complete: () => this.emit('close'),
-      error: e => this.emit('error', e),
+      error: (e) => this.emit('error', e),
     });
   }
 }
