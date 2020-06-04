@@ -8,7 +8,7 @@
     "prepare": "npm run build:prod",
     "watch": "webpack --watch",
     "clean": "tsc --build --clean && rm -rf bundle",
-    "test": "ts-node node_modules/.bin/jasmine",
+    "test": "colcon build --base-paths spec/support/soss-plugin && . install/setup.sh && ts-node node_modules/.bin/jasmine",
     "lint": "eslint . --ext .ts,.js"
   },
   "repository": {
@@ -27,7 +27,7 @@
     "@types/selenium-webdriver": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^2.16.0",
     "@typescript-eslint/parser": "^2.16.0",
-    "chromedriver": "^80.0.1",
+    "chromedriver": "^83.0.0",
     "eslint": "^6.8.0",
     "jasmine": "^3.4.0",
     "jsonwebtoken": "^8.5.1",

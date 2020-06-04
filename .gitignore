@@ -10,3 +10,8 @@
 
 # webpack output
 /bundle/
+
+# colcon build output
+/build
+/install
+/log
