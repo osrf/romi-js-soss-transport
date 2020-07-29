@@ -1,6 +1,6 @@
 {
   "name": "@osrf/romi-js-soss-transport",
-  "version": "0.0.2-alpha.4",
+  "version": "0.1.0",
   "description": "soss transport for romi",
   "scripts": {
     "build": "webpack",
@@ -9,7 +9,8 @@
     "watch": "webpack --watch",
     "clean": "tsc --build --clean && rm -rf bundle",
     "test": "colcon build --base-paths spec/support/soss-plugin && . install/setup.sh && ts-node node_modules/.bin/jasmine",
-    "lint": "eslint . --ext .ts,.js"
+    "lint": "eslint . --ext .ts,.js",
+    "release": "standard-version"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,7 @@
     "jsonwebtoken": "^8.5.1",
     "rclnodejs": "^0.13.0",
     "selenium-webdriver": "^3.6.0",
+    "standard-version": "^8.0.2",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.6.2",
     "typescript": "^3.5.3",
