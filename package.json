@@ -5,10 +5,11 @@
   "scripts": {
     "build": "webpack",
     "build:prod": "webpack --mode production",
-    "prepare": "npm run build:prod",
+    "build:tests": "mkdir -p colcon_ws && cd colcon_ws && colcon build --base-paths ../spec/support/soss-plugin",
+    "prepack": "npm run build:prod",
     "watch": "webpack --watch",
-    "clean": "tsc --build --clean && rm -rf bundle",
-    "test": "colcon build --base-paths spec/support/soss-plugin && . install/setup.sh && ts-node node_modules/.bin/jasmine",
+    "clean": "tsc --build --clean && rm -rf bundle colcon_ws",
+    "test": "npm run build:tests && . colcon_ws/install/setup.sh && ts-node node_modules/.bin/jasmine",
     "lint": "eslint . --ext .ts,.js",
     "release": "standard-version"
   },

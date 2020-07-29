@@ -11,7 +11,5 @@
 # webpack output
 /bundle/
 
-# colcon build output
-/build
-/install
-/log
+# colcon workspace
+/colcon_ws/
