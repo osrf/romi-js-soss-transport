@@ -32,7 +32,7 @@
     "chromedriver": "^83.0.0",
     "eslint": "^6.8.0",
     "jasmine": "^3.4.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "rclnodejs": "^0.13.0",
     "selenium-webdriver": "^3.6.0",
     "standard-version": "^8.0.2",
